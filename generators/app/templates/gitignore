@@ -31,10 +31,12 @@ node_modules
 .metadata
 .settings
 .project
-.DS_Store
 .idea
-*.*~
-generator-hapi-quickstart.iml
+*.iml
 test/reports
+
+
+
+
 
 

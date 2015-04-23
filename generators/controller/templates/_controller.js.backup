@@ -1,0 +1,447 @@
+var Joi = require('joi'),
+	Boom = require('boom');
+
+<%
+
+var Joi = joi;
+
+var randomData = getRandom;
+
+function buildHandlerResponse(resourceProps){
+	var response = {};
+	resourceProps.forEach(function(item, index){
+		addProperty(item, response);
+	});
+	return response;
+}
+
+function addProperty(prop, o){
+	switch(prop.propType){
+		case 'object':
+			o[prop.propName] = {};
+			prop.contains.forEach(function(item, index){
+				addProperty(item, o[prop.propName]);
+			});
+			break;
+		case 'array':
+			o[prop.propName] = [];
+			prop.contains.forEach(function(item, index){
+				if(item.propType === 'object'){
+					o[prop.propName].push({});
+					item.contains.forEach(function(item, index){
+						addProperty(item, o[prop.propName][o[prop.propName].length-1]);
+					});
+				} else if (item.propType === 'array'){
+					o[prop.propName].push([]);
+					item.contains.forEach(function(item, index){
+						addProperty(item, o[prop.propName][o[prop.propName].length-1]);
+					});
+				} else {
+					o[prop.propName].push(randomData(item.propType));
+				}
+			});
+			break;
+		default:
+			o[prop.propName] = randomData(prop.propType);
+	}
+}
+
+function buildResponseScheme(){
+	var scheme = 'Joi.object({';
+
+	resourceProps.forEach(function(item, index){
+		addJoiProperty(item, scheme);
+	});
+
+	scheme += '})';
+	return scheme;
+}
+
+function addJoiProperty(prop, str){
+	var joiParts = {
+		joi : 'Joi',
+		objStart: '.object({'
+		objEnd: '})',
+		req: '.required()',
+		num: '.number()',
+		int: '.number().integer()',
+		arrStart: '.array().items(',
+		arrEnd: ')'
+	};
+
+	switch(prop.propType){
+		case 'object':
+			str += joiParts.joi+joiParts.objStart;
+			prop.contains.forEach(function(item, index){
+				addJoiProperty(item, str);
+			});
+			str += joiParts.objEnd+joiParts.req;
+			break;
+		case 'array':
+			str += joiParts.joi+joiParts.arrStart;
+			prop.contains.forEach(function(item, index){
+				if(item.propType === 'object'){
+					str += joiParts.joi+joiParts.objStart;
+					item.contains.forEach(function(item, index){
+						addJoiProperty(item, str);
+					});
+					str += joiParts.objEnd+joiParts.req;
+				} else if (item.propType === 'array'){
+					str += joiParts.joi+joiParts.arrStart;
+					prop.contains.forEach(function(item, index){
+						addJoiProperty(item, str);
+					});
+					str += joiParts.arrEnd+joiParts.req;
+				} else if (item.propType === 'number'){
+					str += joiParts.joi+joiParts.num+joiParts.req;
+				} else if (item.propType === 'integer'){
+					str += joiParts.joi+joiParts.int+joiParts.req;
+				} else {
+					str += joiParts.joi+'.'+prop.propType+'()'+joiParts.req;
+				}
+			});
+			str += joiParts.arrEnd+joiParts.req;
+			break;
+		case 'number':
+			str += joiParts.num + joiParts.req;
+			break;
+		case 'integer':
+			str += joiParts.int + joiParts.req;
+			break;
+		default:
+			str += '.'+prop.propType+'()'+joiParts.req;
+	}
+}
+
+%>
+
+module.exports = function <%= controllerName %>() {
+	var self = this,
+		routes = [
+			{
+				path: '/<%= pluralResourceName %>/{<%= idPropName %>}',
+				method: 'GET',
+				handler: function(request, reply){
+					///////////////////////////////////////
+					//TODO: Route functionality goes here.
+					var response = <%= JSON.stringify(buildHandlerResponse(resourceProps)) %>;
+
+					reply(response);
+					///////////////////////////////////////
+				},
+				config: {
+					description: 'Get a single <%= resourceName %> by <%= idPropName %>',
+					tags: ['api'],
+					cors:{
+						methods: ['GET']
+					},
+					validate:{
+						params:{
+						<%= idPropName %>: Joi.<%= idPropType %>().required()
+						}
+					},
+					response:{
+						//TODO: verify and complete response model according to your contract.
+						schema: Joi.object({
+							<%
+								resourceProps.forEach(function(item, index){
+									var requiredStr = '.required()',
+										arrayUpperBound = resourceProps.length -1;
+									if(index >= arrayUpperBound){
+										%><%= item.propName %>: Joi.<%= item.propType %>()<%= requiredStr %><%
+									} else {
+										%><%= item.propName %>: Joi.<%= item.propType %>()<%= requiredStr %>,<%
+									}
+								})
+							%>
+						}).options({skipFunctions: true}).meta({className: '<%= resourceName %>Response'})
+					},
+					plugins:{
+						'hapi-swagger-json': {
+							overview: 'Individual <%= resourceName %> by <%= idPropName %> routes', //TODO: Provide a more accurate overview description
+							responseMessages: [
+								{code: 400, message: 'Bad Request'},
+								{code: 401, message: 'Unauthorized'},
+								{code: 404, message: 'Not Found'},
+								{code: 500, message: 'Internal Server Error'}
+							]
+						}
+					}
+				}
+			},
+			{
+				path: '/<%= pluralResourceName %>/{<%= idPropName %>}',
+				method: 'OPTIONS',
+				handler: function(request, reply){
+					reply().header('Accept', 'OPTIONS, GET, PUT, POST, DELETE').code(204);
+				},
+				config: {
+					auth: false,
+					cors: {
+						methods: ['GET', 'PUT', 'POST', 'DELETE', 'OPTIONS']
+					}
+				}
+			},
+			{
+				path: '/<%= pluralResourceName %>',
+				method: 'OPTIONS',
+				handler: function(request, reply){
+					reply().header('Accept', 'OPTIONS, GET, POST').code(204);
+				},
+				config: {
+					auth: false,
+					cors: {
+						methods: ['GET', 'POST', 'OPTIONS']
+					}
+				}
+			},
+			{
+				path: '/<%= pluralResourceName %>',
+				method: 'GET',
+				handler: function(request, reply){
+					///////////////////////////////////////
+					//TODO: Route functionality goes here.
+					var response = {<%= pluralResourceName %>: [] };
+
+					for(var i = 0; i<5; i++){
+						var <%= resourceName %> = {
+								<%
+								resourceProps.forEach(function(item, index){
+									var arrayUpperBound = resourceProps.length -1;
+									if(index >= arrayUpperBound){
+									%><%= item.propName %>:<%
+										if(item.propType === 'string'){
+										%>'<%= getRandom(item.propType) %>'<%
+										} else{
+										%><%= getRandom(item.propType) %><%
+										}
+									} else {
+									%><%= item.propName %>:<%
+										if(item.propType === 'string'){
+										%>'<%= getRandom(item.propType) %>',<%
+										} else{
+										%><%= getRandom(item.propType) %>,<%
+										}
+									}
+								})
+								%>
+						};
+						response.<%= pluralResourceName %>.push(<%= resourceName %>);
+					}
+
+					reply(response);
+					///////////////////////////////////////
+				},
+				config: {
+					description: 'Get a list of <%= pluralResourceName %>',
+					tags: ['api'],
+					cors:{
+						methods: ['GET']
+					},
+					response:{
+						//TODO: verify and complete response model according to your contract.
+						schema: Joi.object({
+							<%= pluralResourceName %>: Joi.array().items(
+										Joi.object({
+										<%
+										resourceProps.forEach(function(item, index){
+											var requiredStr = '.required()',
+												arrayUpperBound = resourceProps.length -1;
+											if(index >= arrayUpperBound){
+											%><%= item.propName %>: Joi.<%= item.propType %>()<%= requiredStr %><%
+											} else {
+											%><%= item.propName %>: Joi.<%= item.propType %>()<%= requiredStr %>,<%
+											}
+										})
+										%>
+								}).options({skipFunctions: true}).meta({className: '<%= resourceName %>Response'})
+							)
+						})
+					},
+					plugins:{
+						'hapi-swagger-json': {
+							overview: '<%= pluralResourceName %> collection routes', //TODO: Provide a more accurate overview description
+							responseMessages: [
+								{code: 401, message: 'Unauthorized'},
+								{code: 500, message: 'Internal Server Error'}
+							]
+						}
+					}
+				}
+			},
+			{
+				path: '/<%= pluralResourceName %>',
+				method: 'POST',
+				handler: function(request, reply){
+					///////////////////////////////////////
+					//TODO: Route functionality goes here.
+					request.payload.<%= idPropName %> = <%= getRandom(idPropType) %>;
+
+					reply(request.payload).created('<%= pluralResourceName %>/<%= getRandom(idPropType) %>');
+					///////////////////////////////////////
+				},
+				config: {
+					description: 'Create a new <%= resourceName %>',
+					tags: ['api'],
+					cors:{
+						methods: ['POST']
+					},
+					validate:{
+						//TODO: verify and complete request model according to your contract.
+						payload: Joi.object({
+							<%
+								resourceProps.forEach(function(item, index){
+									var requiredStr = '.required()',
+										arrayUpperBound = resourceProps.length -1;
+									if (item.propName === idPropName) {
+										requiredStr = '';
+									}
+									if(index >= arrayUpperBound){
+									%><%= item.propName %>: Joi.<%= item.propType %>()<%= requiredStr %><%
+									} else {
+									%><%= item.propName %>: Joi.<%= item.propType %>()<%= requiredStr %>,<%
+									}
+								})
+							%>
+						}).meta({className: 'POST_<%= resourceName %>Request'})
+					},
+					response:{
+							//TODO: verify and complete response model according to your contract.
+							schema: Joi.object({
+								<%
+								resourceProps.forEach(function(item, index){
+									var requiredStr = '.required()',
+										arrayUpperBound = resourceProps.length -1;
+									if(index >= arrayUpperBound){
+									%><%= item.propName %>: Joi.<%= item.propType %>()<%= requiredStr %><%
+									} else {
+									%><%= item.propName %>: Joi.<%= item.propType %>()<%= requiredStr %>,<%
+									}
+								})
+								%>
+							}).options({skipFunctions: true}).meta({className: '<%= resourceName %>Response'})
+					},
+					plugins:{
+						'hapi-swagger-json': {
+							responseMessages: [
+								{code: 400, message: 'Bad Request'},
+								{code: 401, message: 'Unauthorized'},
+								{code: 500, message: 'Internal Server Error'}
+							]
+						}
+					}
+				}
+			},
+			{
+				path: '/<%= pluralResourceName %>/{<%= idPropName %>}',
+				method: 'PUT',
+				handler: function(request, reply){
+					///////////////////////////////////////
+					//TODO: Route functionality goes here.
+					if(request.payload.<%= idPropName %> !== request.params.<%= idPropName %>){
+						return reply(Boom.badRequest('<%= idPropName %> in path and in request do not match.'));
+					}
+
+					if(request.params.<%= idPropName %> === 999999){
+						return reply(Boom.notFound());
+					}
+
+					reply(request.payload);
+					///////////////////////////////////////
+				},
+				config:{
+					description: 'Updates an existing <%= resourceName %>',
+					tags: ['api'],
+					cors:{
+						methods: ['PUT']
+					},
+					validate:{
+						params:{
+						<%= idPropName %>: Joi.<%= idPropType %>().required()
+						},
+						//TODO: verify and complete request model according to your contract.
+						payload: Joi.object({
+							<%
+							resourceProps.forEach(function(item, index){
+								var requiredStr = '.required()',
+									arrayUpperBound = resourceProps.length -1;
+								if(index >= arrayUpperBound){
+								%><%= item.propName %>: Joi.<%= item.propType %>()<%= requiredStr %><%
+								} else {
+								%><%= item.propName %>: Joi.<%= item.propType %>()<%= requiredStr %>,<%
+								}
+							})
+							%>
+						}).meta({className: 'PUT_<%= resourceName %>Request'})
+					},
+					response:{
+						//TODO: verify and complete response model according to your contract.
+						schema: Joi.object({
+							<%
+							resourceProps.forEach(function(item, index){
+								var requiredStr = '.required()',
+									arrayUpperBound = resourceProps.length -1;
+								if(index >= arrayUpperBound){
+								%><%= item.propName %>: Joi.<%= item.propType %>()<%= requiredStr %><%
+								} else {
+								%><%= item.propName %>: Joi.<%= item.propType %>()<%= requiredStr %>,<%
+								}
+							})
+							%>
+						}).options({skipFunctions: true}).meta({className: '<%= resourceName %>Response'})
+					},
+					plugins:{
+						'hapi-swagger-json': {
+							responseMessages: [
+								{code: 400, message: 'Bad Request'},
+								{code: 401, message: 'Unauthorized'},
+								{code: 404, message: 'Not Found'},
+								{code: 500, message: 'Internal Server Error'}
+							]
+						}
+					}
+				}
+			},
+			{
+				path: '/<%= pluralResourceName %>/{<%= idPropName %>}',
+				method: 'DELETE',
+				handler: function(request, reply){
+					///////////////////////////////////////
+					//TODO: Route functionality goes here.
+					if(request.params.<%= idPropName %> === 999999){
+						return reply(Boom.notFound());
+					}
+
+					reply().code(204);
+					///////////////////////////////////////
+				},
+				config: {
+					description: 'Remove an existing <%= resourceName %>',
+					tags: ['api'],
+					cors: {
+						methods: ['DELETE']
+					},
+					validate: {
+						params:{
+							<%= idPropName %>: Joi.<%= idPropType %>().required()
+						}
+					},
+					response: {
+						schema: false
+					},
+					plugins:{
+						'hapi-swagger-json': {
+							responseMessages: [
+								{code: 401, message: 'Unauthorized'},
+								{code: 404, message: 'Not Found'},
+								{code: 500, message: 'Internal Server Error'}
+							]
+						}
+					}
+				}
+			}
+		];
+
+	self.getRoutes = function(){return routes;};
+	return self;
+};

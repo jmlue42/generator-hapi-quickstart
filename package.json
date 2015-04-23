@@ -1,0 +1,34 @@
+{
+	"name": "generator-hapi-quickstart",
+	"version": "1.0.0",
+	"description": "yeoman generator to spin up a hapi.js project",
+	"main": "generators/app/index.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/jmlue42/generator-hapi-quickstart.git"
+	},
+	"author": "Jeff Marquez",
+	"license": "MIT",
+	"bugs": {
+		"url": "https://github.com/jmlue42/generator-hapi-quickstart/issues"
+	},
+	"homepage": "https://github.com/jmlue42/generator-hapi-quickstart",
+	"dependencies": {
+		"glob": "5.x.x",
+		"inflection": "1.x.x",
+		"js-beautify": "1.x.x",
+		"lodash": "3.x.x",
+		"mkdirp": "0.x.x",
+		"yeoman-generator": "0.19.x",
+		"yosay": "1.x.x"
+	},
+	"files": [
+		"generators",
+		"yeoman-generator",
+		"hapi",
+		"api"
+	]
+}

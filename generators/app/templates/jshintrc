@@ -1,0 +1,58 @@
+{
+	"passfail": false,
+	"maxerr"  : 100,
+
+	"browser": false,
+
+	"node" : true,
+	"rhino": false,
+	"couch": false,
+	"wsh"  : false,
+
+	"jquery"     : false,
+	"prototypejs": false,
+	"mootools"   : false,
+	"dojo"       : false,
+
+	"predef": [],
+
+	"debug": false,
+	"devel": true,
+
+	"strict"      : false,
+	"globalstrict": false,
+	"globals": ["describe", "it", "before", "after"],
+
+	"asi"      : false,
+	"laxbreak" : false,
+	"laxcomma" : false,
+	"bitwise"  : true,
+	"boss"     : false,
+	"curly"    : true,
+	"eqeqeq"   : false,
+	"eqnull"   : false,
+	"evil"     : false,
+	"expr"     : false,
+	"forin"    : true,
+	"immed"    : true,
+	"latedef"  : "nofunc",
+	"loopfunc" : true,
+	"noarg"    : true,
+	"regexp"   : false,
+	"regexdash": false,
+	"scripturl": true,
+	"shadow"   : false,
+	"supernew" : false,
+	"undef"    : true,
+	"unused"   : false,
+	"quotmark" : "single",
+	"funcscope": false,
+
+	"newcap"  : true,
+	"noempty" : true,
+	"nonew"   : true,
+	"plusplus": false,
+	"sub"     : true,
+	"trailing": true,
+	"proto"   : false
+}

@@ -1,0 +1,16 @@
+{
+	"loggerOptions":{
+		"name": "<%= _.kebabCase(appName) %>",
+		"transport": "file",
+		"logFilePath": "<%= _.kebabCase(appName) %>.log"
+	},
+	"servers": [
+		{
+			"port": 3000,
+			"labels": ["services"],
+			"host": "localhost"
+		}
+	],
+	"maxSockets": 100,
+	"controllers": []
+}

@@ -1,0 +1,36 @@
+{
+	"name": "<%= _.kebabCase(appName) %>",
+	"version": "1.0.0",
+	"description": "<%= description %>",
+	"keywords": [],
+	"homepage": "",
+	"bugs": "",
+	"license": "",
+	"author": {},
+	"contributors": [],
+	"dependencies": {
+		"boom": "2.x.x",
+		"hapi": "8.x.x",
+		"hapi-logger": "0.3.x",
+		"hoek": "2.x.x",
+		"joi": "6.x.x",
+		"lodash": "2.x.x",
+		"hapi-swagger-json": "1.x.x"
+	},
+	"devDependencies": {
+		"istanbul": "0.x.x",
+		"mocha": "2.x.x",
+		"jshint": "2.x.x"
+	},
+	"engines": {
+		"node": ">=0.10.36"
+	},
+	"repository": {},
+	"scripts": {
+		"test": "make test",
+		"test-html": "make test-html",
+		"clean": "make clean",
+		"install-prod": "make install-prod",
+		"update": "make update"
+	}
+}
