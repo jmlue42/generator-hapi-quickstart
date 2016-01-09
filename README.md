@@ -12,7 +12,6 @@ If you haven't used Yeoman before, it may be helpful to read up on it a bit. Ess
 * Code coverage tools included
 * Basic parameter validation on routes
 * Basic Response validation on routes
-* Correlation-id implementation
 * Logging mechanism setup to work with hapi's native server.log() and response.log() functionality
 * Mocha.js unit test setup
 * JSHint setup
